@@ -1,0 +1,22 @@
+/*this is a test program*/
+//this file has many errors
+
+program example1;
+const
+    a:=1;b:=3;123abc='c';abc123='\n','\t''ds';"this is a string  %s   %d\n";
+var 
+    _df,char,_123,a,b,__c:integer;
+    x:char;
+begin
+    x=12.
+int >= 3
+a= x>=y
+x=.123
+x=123.45
+x=12.e-5
+x=12.3e3.5
+x=12.3e-4
+x=123.12.2
+y=y/2;
+    for x:=1+2 to 3 do b:=100;
+end.  
