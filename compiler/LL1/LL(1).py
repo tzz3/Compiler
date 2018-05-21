@@ -1,3 +1,4 @@
+import copy
 import re
 
 # expression = []
@@ -320,6 +321,7 @@ def analyse():
     # print(alastack)
     topa = len(alastack)
 
+    print("对符号串", stringstack, "的分析过程:")
     while alastack[-1] != '#':
         X = alastack[-1]  # 栈顶符号
         a = stringstack[-1]  # 输入符号
@@ -343,9 +345,12 @@ def analyse():
                         alastack.append(value[v])
                 if alastack[-1] == '#':
                     info = "接受"
-        print([alastack, stringstack, info])
-        analyseform.append([alastack, stringstack, info])
+        af = [copy.copy(alastack), stringstack, info]  # 使用copy来复制内容，否则会随alastack地址内容的改变而改变
+        # print(af)
+        analyseform.append(af)
 
+    for a in analyseform:
+        print(a)
     # print(analyseform)
 
 
