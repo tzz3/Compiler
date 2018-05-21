@@ -4,9 +4,11 @@ import re
 expression = ['E->TA', 'A->+TA|#', 'T->FB', 'B->*FB|#', 'F->(E)|i']
 express = []
 no_terminal = []
+terminal = []
 symbol = ['+', '*', '(', ')']
 first = {}
 follow = {}
+forecastform = {}
 
 
 def inputExpression():  # 表达式输入
@@ -20,6 +22,10 @@ def getterminal():
     global expression
     for e in expression:
         no_terminal.append(e[0])
+    for e in expression:
+        for k in e:
+            if not k.isupper() and k != '-' and k != '>' and k != '|' and k not in terminal:
+                terminal.append(k)
 
 
 def expressSplit():  # 文法改写
@@ -210,11 +216,14 @@ def cirFollow():
             value = follow.get(f)
             for v in value:
                 if v.isupper():
-                    value.remove(v)
-                    for k in follow.get(v):
-                        if k not in value:
-                            value.append(k)
-                            flag = True
+                    if v == f:
+                        value.remove(v)
+                    else:
+                        value.remove(v)
+                        for k in follow.get(v):
+                            if k not in value:
+                                value.append(k)
+                                flag = True
 
 
 """LL1"""
@@ -230,7 +239,7 @@ def isLL1():
                 print('First(', f, ') = ', first[f])
 
             cirFollow()
-            print("\n\nFOLLOW:")
+            print("\nFOLLOW:")
             for f in follow:
                 print('Follow(', f, ') = ', follow[f])
 
@@ -257,12 +266,55 @@ def isLL1():
         return False
 
 
+"""预测分析表"""
+
+
+def forecast():
+    global forecastform
+
+    for k in range(len(expression)):
+        t = expression[k][0]
+        for n in first[t]:  # 规则2
+            key = (t, n)
+            forecastform[key] = express[k]
+        if '#' in first[t]:  # 规则3
+            for f in follow[t]:
+                forecastform[(t, f)] = express[k]
+
+            if '#' in follow[t]:
+                forecastform[(t, '#')] = express[k]
+
+    # print(forecastform)
+    print("\nforcastform:")
+    for n in no_terminal:
+        for key in forecastform:
+            if key[0] == n:
+                print(key, forecastform[key], end=' \t')
+        print()
+
+
+"""递归下降分析"""
+
+
+def analyse():
+    global forecastform
+    s = 'i+i*i#'
+    tops = len(s)
+
+    alastack = ['#', no_terminal[0]]
+    analist = []
+
+    pass
+
+
 if __name__ == '__main__':
     # inputExpression()
 
     # 表达式处理
     getterminal()
-    print("no_terminal:", no_terminal, end="\n\n")
+    print("no_terminal:", no_terminal)
+    print("terminal:", terminal, end="\n\n")
+
     expressSplit()
     init()
     # 表达式正确性验证
@@ -271,4 +323,4 @@ if __name__ == '__main__':
         exit(0)
 
     if isLL1():
-        pass
+        forecast()
