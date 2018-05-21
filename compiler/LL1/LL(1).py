@@ -1,10 +1,12 @@
 import re
 
 # expression = []
-expression = ['E->TX', 'X->+TX|#', 'T->FY', 'Y->*FY|#', 'F->(E)|i']
+expression = ['E->TA', 'A->+TA|#', 'T->FB', 'B->*FB|#', 'F->(E)|i']
 express = []
+no_terminal = []
 symbol = ['+', '*', '(', ')']
 first = {}
+follow = {}
 
 
 def inputExpression():  # 表达式输入
@@ -12,6 +14,12 @@ def inputExpression():  # 表达式输入
     s = input("文法：\n")
     expression = s.split()
     print(expression)
+
+
+def getterminal():
+    global expression
+    for e in expression:
+        no_terminal.append(e[0])
 
 
 def expressSplit():  # 文法改写
@@ -138,36 +146,81 @@ def cirFirst():  # 第一次计算
 
 def cirFirst2():
     flag = True
-    while flag == True:
+    while flag:
         flag = False
         for key in first:
             fList = first.get(key)
             for f in fList:
                 if f.isupper():
                     fList.remove(f)
-                    fList += first.get(f)
+                    for g in first.get(f):
+                        if g != '#':
+                            fList.append(g)
+                    # fList += first.get(f)
                     flag = True
 
 
-def getFollow():
-    pass
+"""FOLLOW"""
+
+
+def infer(x):
+    for f in first:
+        if x == f:
+            for k in first[f]:
+                if k == '#':
+                    return True
+    return False
+
+
+def cirFollow():
+    global follow
+    follow[no_terminal[0]] = ['#']  # 规则 1
+
+    for t in no_terminal:
+        addlist = []
+        for e in expression:
+            for w in range(len(e[1])):
+                if w == len(e[1]) - 1:
+                    if e[1][w] == t:
+                        addlist.append(e[0])  # 规则 4
+                else:
+                    if e[1][w] == t:
+                        x = e[1][w + 1]
+                        if x.isupper():  # 非终结符
+                            for f in first[x]:  # 规则 3
+                                if f != '#':
+                                    addlist.append(f)
+
+                            # 判断是否为空
+                            if infer(x):  # 推导出 '#'   后面所有都为空
+                                addlist.append(e[0])  # 规则 4
+                        else:
+                            addlist.append(x)  # 规则2
+
+        addlist = list(set(addlist))  # 去重
+        if follow.__contains__(t):
+            follow[t] += addlist
+        else:
+            follow[t] = addlist
+
+    flag = True
+    while flag:  # 判断是否计算完成
+        flag = False
+        for f in follow:
+            value = follow.get(f)
+            for v in value:
+                if v.isupper():
+                    value.remove(v)
+                    for k in follow.get(v):
+                        if k not in value:
+                            value.append(k)
+                            flag = True
+
+
+"""LL1"""
 
 
 def isLL1():
-    pass
-
-
-if __name__ == '__main__':
-    # inputExpression()
-
-    # 表达式处理
-    expressSplit()
-    init()
-    # 表达式正确性验证
-    if not check():
-        print("表达式错误")
-        exit(0)
-
     if leftRecursion():
         if recall():
             cirFirst()
@@ -175,9 +228,47 @@ if __name__ == '__main__':
             print("FIRST:", )
             for f in first:
                 print('First(', f, ') = ', first[f])
+
+            cirFollow()
+            print("\n\nFOLLOW:")
+            for f in follow:
+                print('Follow(', f, ') = ', follow[f])
+
+            # LL1 规则2
+            for e in express:
+                for k in express:
+                    if e != k and e[0] == k[0] and first[e] == first[k]:
+                        print("首终结符集 相交")
+                        return False
+
+            # LL1 3
+            for n in no_terminal:
+                if '#' in first[n]:
+                    for k in first[n]:
+                        if k in follow[n] and k != '#':
+                            print("LL1 规则3 不符合")
+                            return False
+            return True
         else:
             print("包含回溯")
+            return False
     else:
         print("包含左递归")
+        return False
 
-    pass
+
+if __name__ == '__main__':
+    # inputExpression()
+
+    # 表达式处理
+    getterminal()
+    print("no_terminal:", no_terminal, end="\n\n")
+    expressSplit()
+    init()
+    # 表达式正确性验证
+    if not check():
+        print("表达式错误")
+        exit(0)
+
+    if isLL1():
+        pass
