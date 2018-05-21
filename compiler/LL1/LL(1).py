@@ -274,10 +274,12 @@ def forecast():
 
     for k in range(len(expression)):
         t = expression[k][0]
-        for n in first[t]:  # 规则2
-            key = (t, n)
-            forecastform[key] = express[k]
-        if '#' in first[t]:  # 规则3
+        e = express[k]
+        for n in first[e]:  # 规则2
+            if not n.isupper():
+                key = (t, n)
+                forecastform[key] = express[k]
+        if '#' in first[e]:  # 规则3
             for f in follow[t]:
                 forecastform[(t, f)] = express[k]
 
@@ -291,6 +293,7 @@ def forecast():
             if key[0] == n:
                 print(key, forecastform[key], end=' \t')
         print()
+    print()
 
 
 """递归下降分析"""
@@ -298,13 +301,52 @@ def forecast():
 
 def analyse():
     global forecastform
-    s = 'i+i*i#'
-    tops = len(s)
+    analyseform = []
+
+    s = 'i+i*i#'  # 分析符号串
+    sp = re.split(r'([+*#])', s)
+    s = []
+    for k in sp:
+        if k != None and k != '':
+            s.append(k)
+
+    stringstack = []
+    for m in range(len(s) - 1, -1, -1):
+        stringstack.append(s[m])
+    # print(stringstack)
+    tops = len(stringstack)
 
     alastack = ['#', no_terminal[0]]
-    analist = []
+    # print(alastack)
+    topa = len(alastack)
 
-    pass
+    while alastack[-1] != '#':
+        X = alastack[-1]  # 栈顶符号
+        a = stringstack[-1]  # 输入符号
+        info = ''
+        if X == a:
+            if X == '#':  # 分析成功
+                info = "接受"
+            else:  # 获得一次匹配
+                alastack.remove(X)
+                info = stringstack[-1] + '匹配'
+                stringstack = stringstack[:-1]
+        else:
+            key = (X, a)
+            if forecastform.__contains__(key):
+                alastack.remove(X)  # 出栈
+                evalue = forecastform[key]  # 产生式
+                info = evalue
+                value = evalue.split('>')[1]
+                for v in range(len(value) - 1, -1, -1):  # 反序压栈
+                    if value[v] != '#':
+                        alastack.append(value[v])
+                if alastack[-1] == '#':
+                    info = "接受"
+        print([alastack, stringstack, info])
+        analyseform.append([alastack, stringstack, info])
+
+    # print(analyseform)
 
 
 if __name__ == '__main__':
@@ -324,3 +366,4 @@ if __name__ == '__main__':
 
     if isLL1():
         forecast()
+        analyse()
