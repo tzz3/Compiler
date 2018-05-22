@@ -8,7 +8,7 @@ terminal = []  # 终结符
 symbol = ['+', '*', '(', ')']  # 符号
 project = []  # 项目
 projects = []  # 处理后项目
-iterm = []  # 项目集规范族
+iterms = []  # 项目集规范族
 
 
 def input():
@@ -97,7 +97,8 @@ def Closure(I):
     clist = [I]
     r = projects[index][1]
     nt = ''
-
+    if I[-1] == '·':
+        return True
     for i in range(len(r)):
         if r[i] == '·' and i < len(r) - 1:
             nt = r[i + 1]
@@ -112,13 +113,19 @@ def Closure(I):
 
 
 def GO(I, X):
-    # print(I, X)
-
+    """
+    状态转移函数
+    :param I: 项目集I
+    :param X: 转移状态
+    :return: list 结果集
+    """
     j = []
     glist = []
     # 寻找a·Xb
     for i in I:
         index = i.index('·')  # index从0开始计数
+        if index == len(i) - 1:  # 终结符 GO 结束
+            return True
         if index > 0 and i[index + 1] == X:
             j.append(i)
             for p in project:
@@ -130,16 +137,46 @@ def GO(I, X):
 
 def cirproject():  # 项目集规范族计算
     global projects
-
+    global iterms
+    iterm = []  # 项目集1
+    cired = []  # 已计算
     # for p in projects:
     I = project[0]
     closure = Closure(I)
     print("closure:", closure)
+    iterm.append(I)
+    cired.append(I)
 
     for i in closure:
         k = i.index('·') + 1
-        go = GO(closure, i[k])
-        print("go:", go)
+        glist = GO(closure, i[k])
+        print("glist:", glist)
+        for g in glist:
+            iterm.append(g)
+
+    print("iterm:", iterm, end="\n\n")
+
+    flag = True
+    while flag == True:
+        flag = False
+        for i in iterm:
+            if i not in cired:
+                flag = True
+                # 计算closure
+                closure = Closure(i)
+                cired.append(i)
+                if closure != True:  # 终结符
+                    # 计算go
+                    for c in closure:
+                        k = c.index('·') + 1
+                        go = GO(closure, c[k])
+                        if go != True:
+                            for g in go:
+                                if g not in iterm:
+                                    iterm.append(g)
+                                    # 添加联系图
+                    continue
+    print("iterm:", iterm, end="\n\n")
 
 
 if __name__ == '__main__':
