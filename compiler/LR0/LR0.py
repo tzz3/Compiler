@@ -1,11 +1,6 @@
 import copy
 import re
 
-# expression = ['S->E', 'E->aA|bB', 'A->cA|d', 'B->cB|d']
-# expression = ['E->aA|bB', 'A->cA|d', 'B->cB|d']  # 应处理文法
-# expression = ['E->E+T|T', 'T->T*F|F', 'F->(E)|i']
-
-# E->aA|bB A->cA|d B->cB|d
 expression = []
 express = []  # 处理后表达式 切割处理
 no_terminal = []  # 非终结符
@@ -22,7 +17,6 @@ def inputep():
     if len(expression) == 0:
         s = input("文法：\n")
         expression = s.split()
-    # print(expression)
 
 
 def getterminal():
@@ -52,7 +46,6 @@ def expressSplit():  # 文法改写
                 s.remove(k)
         for k in s[1:]:
             express.append(s[0] + '->' + k)
-        # print(s)
     express.insert(0, 'S->' + express[0][0])
     print("\nexpress:", express, end="\n\n")
 
@@ -311,7 +304,6 @@ def analyse():
                 for l in range(length):
                     s1 += str(states.pop()) + ' '
                     s2 += symbol.pop() + ' '
-
                 symbol.append(ne)
                 v = goto[(states[-1], ne)]
                 states.append(v)
@@ -322,7 +314,6 @@ def analyse():
         else:
             print('ERROR: 分析字符串错误')
             break
-    tab = '\t' * 2
     length = len(analysisform)
     print('%-5s %-11s %-10s %-12s %-10s %s' % ('序号', '状态栈', '符号栈', '产生式', '输入串', '说明'))
     for index in range(length):
