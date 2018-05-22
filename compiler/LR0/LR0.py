@@ -1,7 +1,11 @@
 import re
 
 # expression = ['S->E', 'E->aA|bB', 'A->cA|d', 'B->cB|d']
-expression = ['E->aA|bB', 'A->cA|d', 'B->cB|d']  # 应处理文法
+# expression = ['E->aA|bB', 'A->cA|d', 'B->cB|d']  # 应处理文法
+# expression = ['E->E+T|T', 'T->T*F|F', 'F->(E)|i']
+
+# E->aA|bB A->cA|d B->cB|d
+expression = []
 express = []  # 处理后表达式 切割处理
 no_terminal = []  # 非终结符
 terminal = []  # 终结符
@@ -9,13 +13,14 @@ symbol = ['+', '*', '(', ')']  # 符号
 project = []  # 项目
 projects = []  # 处理后项目
 iterms = []  # 项目集规范族
+inputstr = []  # 分析表输入串 list
 
 
-def input():
+def inputep():
     global expression
     s = input("文法：\n")
     expression = s.split()
-    print(expression)
+    # print(expression)
 
 
 def getterminal():
@@ -24,11 +29,11 @@ def getterminal():
     for e in expression:
         no_terminal.append(e[0])
 
-    terminal.append('#')
     for e in expression:
         for k in e:
             if not k.isupper() and k != '-' and k != '>' and k != '|' and k not in terminal:
                 terminal.append(k)
+    terminal.append('#')
 
     print('no_terminal:', no_terminal)
     print('terminal:', terminal, end="\n\n")
@@ -161,15 +166,13 @@ def cirproject():  # 项目集规范族计算
                     for c in closure:
                         k = c.index('·') + 1
                         go = GO(closure, c[k])
-                        # iterms.append(go)
                         if go != True:
                             for g in go:
                                 ct = [closure[0], c[k], g]
-                                contact.append(ct)
+                                contact.append(ct)  # 添加联系图 begin,x,end
                                 if g not in iterm:
                                     iterm.append(g)
-                                    # 添加联系图 begin,x,end
-                                    # contact.append([c, c[k], g])
+
                     continue
     print("iterm:", iterm, end="\n\n")
 
@@ -194,6 +197,8 @@ def analysisSheet():  # 计算分析表
     global iterms
     global contact
     global table
+    global action
+    global goto
     table = {}
     action = {}
     goto = {}
@@ -214,11 +219,125 @@ def analysisSheet():  # 计算分析表
         if iterms[index][0][-2:] == no_terminal[0] + '·':
             action[(index, '#')] = 'acc'
 
-    print("action:", action, end="\n\n")
-    print("goto:", goto, end="\n\n")
+    tab = '\t' * 2
+    print('----' * (len(terminal + no_terminal) + 1) * 2)
+    print(tab * 2, 'action', tab * 4, 'goto')
+    print('状态', end=tab)
+    for t in terminal:
+        print(t, end=tab)
+    print('|', end=tab)
+    for n in no_terminal:
+        print(n, end=tab)
+    print('\n', '----' * (len(terminal + no_terminal) + 1) * 2)
+    for i in range(len(iterms)):
+        print(i, end=tab)
+        for t in terminal:
+            flag = False
+            for key in action:
+                if key == (i, t):
+                    flag = True
+                    print(action[key], end=tab)
+                    break
+            if flag == False:
+                print(end=tab)
+        print('|', end=tab)
+        for n in no_terminal:
+            flag = False
+            for key in goto:
+                if key == (i, n):
+                    flag = True
+                    print(goto[key], end=tab)
+            if flag == False:
+                print(end=tab)
+        print()
+    print('----' * (len(terminal + no_terminal) + 1) * 2)
+
+    print(action)
+    print(goto)
+
+
+def inputastr():  # 输入串
+    global inputstr
+    global s
+    if len(s) == 0:
+        s = input("输入串:")  # i+i*i
+    # str = re.split(r'([+*#])', s)
+    # str = s.split()
+    str = s
+    print(str)
+    for m in range(len(str) - 1, -1, -1):
+        inputstr.append(str[m])
+
+
+def analyse():
+    global action
+    global goto
+    global analysisform
+    global inputstr
+    analysisform = []
+
+    states = [0]
+    symbol = ['#']
+    ex = ""
+    inputstr.insert(0, '#')
+    print(inputstr)
+    info = '0和#进栈'
+    # print(inputstr.pop(), inputstr)
+    # exit(0)
+    row = [states, symbol, ex, inputstr, info]
+    print(row)
+    analysisform.append(row)
+
+    while True:
+        ex = ""
+        info = ''
+        stop = states[-1]
+        symtop = symbol[-1]
+        itop = inputstr[-1]
+
+        key = (stop, itop)
+        if action.__contains__(key):
+            value = action[key]
+            if value == 'acc':
+                break
+
+            state = int(value[-1])
+            if value[0] == 'S':  # 移进
+                info = inputstr[-1] + '和S' + str(state) + '进栈'
+                states.append(state)
+                symbol.append(inputstr.pop())
+            elif value[0] == 'r':
+                # 状态和符号退栈 表达式头和状态入栈
+                ex = express[state]
+                ne = ex[0]
+                re = ex[(ex.index('>') + 1):]
+                length = len(ex.split('>')[-1])
+                s1 = ""
+                s2 = ""
+                for l in range(length):
+                    s1 += str(states.pop()) + ' '
+                    s2 += symbol.pop() + ' '
+
+                symbol.append(ne)
+                v = goto[(states[-1], ne)]
+                states.append(v)
+
+                info = s1 + '和 ' + s2 + '退栈, ' + ne + '和S' + str(state) + '进栈'
+            row = [states, symbol, ex, inputstr, info]
+            print(row)
+            analysisform.append(row)
 
 
 if __name__ == '__main__':
+    # E->aA|bB A->cA|d B->cB|d
+    #
+    # expression = []
+    # expression = ['E->aA|bB', 'A->cA|d', 'B->cB|d']  # 应处理文法
+    expression = ['E->E+T|T', 'T->T*F|F', 'F->(E)|i']
+    s = 'i+i*i'
+    # s = 'ad'
+
+    # inputep()  # 输入文法
     getterminal()
     expressSplit()
     init()
@@ -228,3 +347,6 @@ if __name__ == '__main__':
 
     cirproject()  # 计算项目集规范族
     analysisSheet()  # 计算预测分析表
+
+    inputastr()  # 输入分析输入串
+    analyse()  # LR分析过程
