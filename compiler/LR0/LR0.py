@@ -140,21 +140,10 @@ def cirproject():  # 项目集规范族计算
     global iterms
     iterm = []  # 项目集1
     cired = []  # 已计算
-    # for p in projects:
+    contact = []  # 联系图
+
     I = project[0]
-    closure = Closure(I)
-    print("closure:", closure)
     iterm.append(I)
-    cired.append(I)
-
-    for i in closure:
-        k = i.index('·') + 1
-        glist = GO(closure, i[k])
-        print("glist:", glist)
-        for g in glist:
-            iterm.append(g)
-
-    print("iterm:", iterm, end="\n\n")
 
     flag = True
     while flag == True:
@@ -170,13 +159,33 @@ def cirproject():  # 项目集规范族计算
                     for c in closure:
                         k = c.index('·') + 1
                         go = GO(closure, c[k])
+                        # iterms.append(go)
                         if go != True:
                             for g in go:
+                                ct = [closure[0], c[k], g]
+                                contact.append(ct)
                                 if g not in iterm:
                                     iterm.append(g)
-                                    # 添加联系图
+                                    # 添加联系图 begin,x,end
+                                    # contact.append([c, c[k], g])
                     continue
     print("iterm:", iterm, end="\n\n")
+
+    for i in iterm:
+        c = Closure(i)
+        if c == True:
+            iterms.append([i])
+        else:
+            iterms.append(c)
+    print('iterms:', iterms, end="\n\n")
+
+    for c in contact:  # 转换关系图
+        for i in iterms:
+            if c[0] in i:
+                c[0] = iterms.index(i)
+            if c[2] in i:
+                c[2] = iterms.index(i)
+    print("contact:", contact, end="\n\n")
 
 
 if __name__ == '__main__':
