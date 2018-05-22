@@ -1,3 +1,4 @@
+import copy
 import re
 
 # expression = ['S->E', 'E->aA|bB', 'A->cA|d', 'B->cB|d']
@@ -18,8 +19,9 @@ inputstr = []  # 分析表输入串 list
 
 def inputep():
     global expression
-    s = input("文法：\n")
-    expression = s.split()
+    if len(expression) == 0:
+        s = input("文法：\n")
+        expression = s.split()
     # print(expression)
 
 
@@ -250,10 +252,7 @@ def analysisSheet():  # 计算分析表
             if flag == False:
                 print(end=tab)
         print()
-    print('----' * (len(terminal + no_terminal) + 1) * 2)
-
-    print(action)
-    print(goto)
+    print('----' * (len(terminal + no_terminal) + 1) * 2, end='\n' * 2)
 
 
 def inputastr():  # 输入串
@@ -261,12 +260,9 @@ def inputastr():  # 输入串
     global s
     if len(s) == 0:
         s = input("输入串:")  # i+i*i
-    # str = re.split(r'([+*#])', s)
-    # str = s.split()
-    str = s
-    print(str)
-    for m in range(len(str) - 1, -1, -1):
-        inputstr.append(str[m])
+    for m in range(len(s) - 1, -1, -1):
+        inputstr.append(s[m])
+    print()
 
 
 def analyse():
@@ -280,15 +276,13 @@ def analyse():
     symbol = ['#']
     ex = ""
     inputstr.insert(0, '#')
-    print(inputstr)
     info = '0和#进栈'
-    # print(inputstr.pop(), inputstr)
-    # exit(0)
-    row = [states, symbol, ex, inputstr, info]
-    print(row)
+    row = [copy.copy(states), copy.copy(symbol), copy.copy(ex), copy.copy(inputstr), copy.copy(info)]
+    # print(row)
     analysisform.append(row)
 
     while True:
+        row = []
         ex = ""
         info = ''
         stop = states[-1]
@@ -323,21 +317,32 @@ def analyse():
                 states.append(v)
 
                 info = s1 + '和 ' + s2 + '退栈, ' + ne + '和S' + str(state) + '进栈'
-            row = [states, symbol, ex, inputstr, info]
-            print(row)
+            row = [copy.copy(states), copy.copy(symbol), copy.copy(ex), copy.copy(inputstr), copy.copy(info)]
             analysisform.append(row)
+        else:
+            print('ERROR: 分析字符串错误')
+            break
+    tab = '\t' * 2
+    length = len(analysisform)
+    print('%-5s %-11s %-10s %-12s %-10s %s' % ('序号', '状态栈', '符号栈', '产生式', '输入串', '说明'))
+    for index in range(length):
+        af = analysisform[index]
+        state = ''.join(str(s) for s in af[0])
+        symbol = ''.join(af[1])
+        ex = af[2]
+        instr = ''.join(af[3])
+        info = af[4]
+        print('%-7d %-13s %-13s %-13s %-12s %s' % (index, state, symbol, ex, instr, info))
 
 
 if __name__ == '__main__':
     # E->aA|bB A->cA|d B->cB|d
-    #
-    # expression = []
     # expression = ['E->aA|bB', 'A->cA|d', 'B->cB|d']  # 应处理文法
-    expression = ['E->E+T|T', 'T->T*F|F', 'F->(E)|i']
-    s = 'i+i*i'
-    # s = 'ad'
+    # s = 'acccd'
+    expression = []  # E->aA|bB A->cA|d B->cB|d
+    s = ''  # acccd
 
-    # inputep()  # 输入文法
+    inputep()  # 输入文法
     getterminal()
     expressSplit()
     init()
