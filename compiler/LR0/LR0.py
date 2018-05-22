@@ -24,6 +24,7 @@ def getterminal():
     for e in expression:
         no_terminal.append(e[0])
 
+    terminal.append('#')
     for e in expression:
         for k in e:
             if not k.isupper() and k != '-' and k != '>' and k != '|' and k not in terminal:
@@ -138,6 +139,7 @@ def GO(I, X):
 def cirproject():  # 项目集规范族计算
     global projects
     global iterms
+    global contact
     iterm = []  # 项目集1
     cired = []  # 已计算
     contact = []  # 联系图
@@ -171,7 +173,7 @@ def cirproject():  # 项目集规范族计算
                     continue
     print("iterm:", iterm, end="\n\n")
 
-    for i in iterm:
+    for i in iterm:  # 推导族内元素
         c = Closure(i)
         if c == True:
             iterms.append([i])
@@ -188,12 +190,41 @@ def cirproject():  # 项目集规范族计算
     print("contact:", contact, end="\n\n")
 
 
+def analysisSheet():  # 计算分析表
+    global iterms
+    global contact
+    global table
+    table = {}
+    action = {}
+    goto = {}
+
+    for c in contact:
+        key = (c[0], c[1])
+        if c[1].isupper():
+            goto[key] = c[2]
+        else:
+            action[key] = 'S' + str(c[2])
+
+    for index in range(len(iterms)):
+        for iterm in iterms[index]:
+            if iterm[-1] == '·' and iterm[-2] != no_terminal[0]:
+                j = express.index(iterm[:-1])
+                for t in terminal:
+                    action[(index, t)] = 'r' + str(j)
+        if iterms[index][0][-2:] == no_terminal[0] + '·':
+            action[(index, '#')] = 'acc'
+
+    print("action:", action, end="\n\n")
+    print("goto:", goto, end="\n\n")
+
+
 if __name__ == '__main__':
     getterminal()
     expressSplit()
     init()
 
-    addpoint()
-    projectSplit()
+    addpoint()  # 项目加点
+    projectSplit()  # 项目切割
 
-    cirproject()
+    cirproject()  # 计算项目集规范族
+    analysisSheet()  # 计算预测分析表
