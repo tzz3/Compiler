@@ -5,6 +5,7 @@ wordCode = ['', 'program', 'var', 'integer', 'bool', 'real', 'char', 'const', 'b
             '>', '<=', '>=', '==', '<>', 'id', '整常数', '实常数', '字符常数', '布尔常数', '=', ';', ',', '\'', '/*', '*/', ':', '(',
             ')', '.', ':=', 'repeat', 'until']
 # 1-20 关键字  21-33 运算符  34 标识符  35-38 常数  39-49 界符 50-51 repeat util
+rop = ['>', '<', '>=', '<=', '<>', '==']
 tokenList = []
 symList = []
 errorList = []
@@ -91,7 +92,9 @@ def changeSym(name, value, type):
                 sym[2] = value
 
 
-# 算术表达式
+"""算术表达式"""
+
+
 def ael():
     global token
     token = token.replace('.', '', 1)
@@ -170,7 +173,9 @@ def expression():
             error('expression error')
 
 
-# 逻辑表达式
+"""逻辑表达式"""
+
+
 def bel():
     if isIdentifider() or token == 'true' or token == 'false':
         return True
@@ -237,13 +242,60 @@ def bexp():
         return
 
 
+"""intermediate"""
+
+
+def addintermediate():
+    pass
+
+
+def ropiterm(rpn):
+    stack = []
+
+    wK = -1
+    # FC = -1
+    for r in rpn:
+        if not isSymbol(r):
+            stack.append(r)
+        else:
+            arg2 = stack.pop()
+            arg1 = stack.pop()
+            if r in rop:
+                itd = ['j' + r, arg1, arg2, K + 2]
+                intermediate[K] = itd
+                K += 1
+                itd = ['j', '_', '_', wK]
+                intermediate[K] = itd
+                wK = K
+                K += 1
+            else:
+                itd = [r, arg1, arg2, 'T' + str(n)]
+                stack.append('T' + str(n))
+                n += 1
+                intermediate[K] = itd
+                K += 1
+    pass
+
+
+"""控制语句"""
+
+
 def ifs():
     global treeNum
+    global t
+    global n
+    global K
     print('--' * treeNum, 'if 处理开始')
     treeNum += 2
 
+    begin = t
     getnexttoken()
     bexp()
+    end = t
+    s = tokenList[begin + 1:end + 1]
+    print(s)
+    rpn = toRPN(s)
+
     getnexttoken()
     if token != 'then':
         error('if 判断结束错误')
@@ -262,13 +314,47 @@ def ifs():
 
 def whiles():
     global treeNum
+    global t
+    global n
+    global K
     print('--' * treeNum, 'while 处理开始')
     treeNum += 2
 
     # 处理
     getnexttoken()
+    begin = t
     bexp()
-    # lasttoken()
+    end = t
+    # print(tokenList[begin:end + 1])
+
+    s = tokenList[begin:end + 1]
+    rpn = toRPN(s)
+    # print(rpn)
+    stack = []
+
+    wK = -1
+    # FC = -1
+    for r in rpn:
+        if not isSymbol(r):
+            stack.append(r)
+        else:
+            arg2 = stack.pop()
+            arg1 = stack.pop()
+            if r in rop:
+                itd = ['j' + r, arg1, arg2, K + 2]
+                intermediate[K] = itd
+                K += 1
+                itd = ['j', '_', '_', wK]
+                intermediate[K] = itd
+                wK = K
+                K += 1
+            else:
+                itd = [r, arg1, arg2, 'T' + str(n)]
+                stack.append('T' + str(n))
+                n += 1
+                intermediate[K] = itd
+                K += 1
+
     getnexttoken()
     if token == 'do':
         getnexttoken()
@@ -276,6 +362,8 @@ def whiles():
         lasttoken()
     else:
         error('while do > error')
+
+    intermediate[wK][3] = K  # while 错误跳转回传
 
     treeNum -= 2
     print('--' * treeNum, 'while 处理结束')
@@ -329,6 +417,7 @@ def repeat():
     print('--' * treeNum, 'repeat 处理结束')
 
 
+# 类型检查
 def typecheck(name, type):
     for s in symList:
         if name in s:
@@ -339,6 +428,7 @@ def typecheck(name, type):
     return False
 
 
+# 操作数
 def isConvert(e):
     if e.isdigit():
         return True
@@ -348,23 +438,25 @@ def isConvert(e):
         return False
 
 
+# 运算符
 def isSymbol(e):
-    if e in [':=', '+', '-', '*', '/']:
+    if e in [':=', '+', '-', '*', '/', '>', '<', '>=', '<=', '<>', '==']:
         return True
     else:
         return False
 
 
+# 优先级比较
 def priority(a, b):  # b优先级高 return true
-    p = [":=", '(', ')', '*', '/', '+', '-']
+    p = ['>', '<', '>=', '<=', '<>', '==', '(', ')', '*', '/', '+', '-']
     if p.index(a) >= p.index(b):
         return True
     else:
         return False
 
 
+# 逆波兰式转换
 def toRPN(sentence):  # reverse polish notation 逆波兰式
-    global expression
     RPN = []
     stack = []
     top = 0
@@ -421,7 +513,7 @@ def rpntoimd(rpn):
             K += 1
 
 
-# 赋值处理
+# 赋值处理 算术表达式
 def assign():
     global treeNum
     global t
@@ -453,12 +545,12 @@ def assign():
         error('assign 赋值计算错误')
     end = t
     s = tokenList[begin:end]
-    print(s)
+    # print(s)
     s1 = s[:s.index(':=') + 1]
     s2 = s[s.index(':=') + 1:]
 
     rpn = toRPN(s2)
-    print(rpn)
+    # print(rpn)
     stack = []
 
     for r in rpn:
@@ -625,6 +717,7 @@ def parser():
             ST_SORT()
 
 
+# 输出符号表
 def outputSym():
     global symList
     print('SYMLIST:')
@@ -646,4 +739,6 @@ if __name__ == '__main__':
     # print(symList)
 
     outputSym()
-    print(intermediate)
+
+    for i in intermediate:
+        print(i, intermediate[i])
