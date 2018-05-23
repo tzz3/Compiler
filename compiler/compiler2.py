@@ -242,41 +242,6 @@ def bexp():
         return
 
 
-"""intermediate"""
-
-
-def addintermediate():
-    pass
-
-
-def ropiterm(rpn):
-    stack = []
-
-    wK = -1
-    # FC = -1
-    for r in rpn:
-        if not isSymbol(r):
-            stack.append(r)
-        else:
-            arg2 = stack.pop()
-            arg1 = stack.pop()
-            if r in rop:
-                itd = ['j' + r, arg1, arg2, K + 2]
-                intermediate[K] = itd
-                K += 1
-                itd = ['j', '_', '_', wK]
-                intermediate[K] = itd
-                wK = K
-                K += 1
-            else:
-                itd = [r, arg1, arg2, 'T' + str(n)]
-                stack.append('T' + str(n))
-                n += 1
-                intermediate[K] = itd
-                K += 1
-    pass
-
-
 """控制语句"""
 
 
@@ -295,6 +260,9 @@ def ifs():
     s = tokenList[begin + 1:end + 1]
     print(s)
     rpn = toRPN(s)
+    print(rpn)
+
+    bf = rpntoimd(rpn)  # 需要回填列表
 
     getnexttoken()
     if token != 'then':
@@ -307,6 +275,10 @@ def ifs():
         lasttoken()  # 回退一个
     else:
         lasttoken()
+
+    print(t, tokenList[t])
+
+    backfill(bf)  # if 处理完毕错误跳转回传
 
     treeNum -= 2
     print('--' * treeNum, 'if 处理结束')
@@ -325,35 +297,11 @@ def whiles():
     begin = t
     bexp()
     end = t
-    # print(tokenList[begin:end + 1])
 
     s = tokenList[begin:end + 1]
     rpn = toRPN(s)
-    # print(rpn)
-    stack = []
 
-    wK = -1
-    # FC = -1
-    for r in rpn:
-        if not isSymbol(r):
-            stack.append(r)
-        else:
-            arg2 = stack.pop()
-            arg1 = stack.pop()
-            if r in rop:
-                itd = ['j' + r, arg1, arg2, K + 2]
-                intermediate[K] = itd
-                K += 1
-                itd = ['j', '_', '_', wK]
-                intermediate[K] = itd
-                wK = K
-                K += 1
-            else:
-                itd = [r, arg1, arg2, 'T' + str(n)]
-                stack.append('T' + str(n))
-                n += 1
-                intermediate[K] = itd
-                K += 1
+    bf = rpntoimd(rpn)
 
     getnexttoken()
     if token == 'do':
@@ -363,7 +311,7 @@ def whiles():
     else:
         error('while do > error')
 
-    intermediate[wK][3] = K  # while 错误跳转回传
+    backfill(bf)  # while 错误跳转回填
 
     treeNum -= 2
     print('--' * treeNum, 'while 处理结束')
@@ -371,10 +319,14 @@ def whiles():
 
 def fors():
     global treeNum
+    global t
+    global n
+    global K
     print('--' * treeNum, 'for 处理开始')
     treeNum += 2
 
     getnexttoken()
+    begin = t
     if not isIdentifider():
         error('for 标识符条件错误')
     getnexttoken()
@@ -400,6 +352,9 @@ def fors():
 
 def repeat():
     global treeNum
+    global t
+    global n
+    global K
     print('--' * treeNum, 'repeat 处理开始')
     treeNum += 2
 
@@ -448,7 +403,7 @@ def isSymbol(e):
 
 # 优先级比较
 def priority(a, b):  # b优先级高 return true
-    p = ['>', '<', '>=', '<=', '<>', '==', '(', ')', '*', '/', '+', '-']
+    p = ['(', ')', '*', '/', '+', '-', '>', '<', '>=', '<=', '<>', '==']
     if p.index(a) >= p.index(b):
         return True
     else:
@@ -495,22 +450,46 @@ def toRPN(sentence):  # reverse polish notation 逆波兰式
     return RPN
 
 
+"""intermediate"""
+
+
+# 波兰式转换为四元式
 def rpntoimd(rpn):
     global intermediate
     global n
     global K
+
     stack = []
+    backfill = []  # 需要回填列表
+    iK = -1
     for r in rpn:
         if not isSymbol(r):
             stack.append(r)
         else:
             arg2 = stack.pop()
             arg1 = stack.pop()
-            itd = [r, arg1, arg2, 'T' + str(n)]
-            stack.append('T' + str(n))
-            n += 1
-            intermediate[K] = itd
-            K += 1
+            if r in rop:
+                itd = ['j' + r, arg1, arg2, K + 2]
+                intermediate[K] = itd
+                K += 1
+                itd = ['j', '_', '_', iK]
+                backfill.append(K)
+                intermediate[K] = itd
+                iK = K
+                K += 1
+            else:
+                itd = [r, arg1, arg2, 'T' + str(n)]
+                stack.append('T' + str(n))
+                n += 1
+                intermediate[K] = itd
+                K += 1
+    return backfill
+
+
+# 跳转回填
+def backfill(bf):
+    for b in bf:  # 处理完毕错误跳转回传
+        intermediate[b][3] = K
 
 
 # 赋值处理 算术表达式
@@ -552,7 +531,6 @@ def assign():
     rpn = toRPN(s2)
     # print(rpn)
     stack = []
-
     for r in rpn:
         if not isSymbol(r):
             stack.append(r)
