@@ -483,7 +483,7 @@ def isSymbol(e):
 
 # 优先级比较
 def priority(a, b):  # b优先级高 return true
-    p = ['(', ')', '*', '/', '+', '-', ':=', '>', '<', '>=', '<=', '<>', '==', 'not', 'and', 'or']
+    p = ['(', ')', '*', '/', '-', '+', ':=', '>', '<', '>=', '<=', '<>', '==', 'not', 'and', 'or']
     if p.index(a) >= p.index(b):
         return True
     else:
@@ -633,12 +633,12 @@ def assign():
         error('assign 赋值计算错误')
     end = t
     s = tokenList[begin:end]
-    print(s)
+    # print(s)
     s1 = s[:s.index(':=') + 1]
     s2 = s[s.index(':=') + 1:]
 
     rpn = toRPN(s2)
-    print(rpn)
+    # print(rpn)
     stack = []
     for r in rpn:
         if not isSymbol(r):

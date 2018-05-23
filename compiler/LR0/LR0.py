@@ -219,6 +219,7 @@ def analysisSheet():  # 计算分析表
             action[(index, '#')] = 'acc'
 
     tab = '\t' * 2
+    print('   ' * (len(terminal + no_terminal) + 1), 'LR(0)分析表')
     print('----' * (len(terminal + no_terminal) + 1) * 2)
     print(tab * 2, 'action', tab * 4, 'goto')
     print('状态', end=tab)
@@ -319,6 +320,7 @@ def analyse():
             print('ERROR: 分析字符串错误')
             break
     length = len(analysisform)
+    print('%25s%s' % ('', 'LR分析过程'), end='\n\n')
     print('%-5s %-11s %-10s %-12s %-10s %s' % ('序号', '状态栈', '符号栈', '产生式', '输入串', '说明'))
     for index in range(length):
         af = analysisform[index]
@@ -328,6 +330,8 @@ def analyse():
         instr = ''.join(af[3])
         info = af[4]
         print('%-7d %-13s %-13s %-13s %-12s %s' % (index, state, symbol, ex, instr, info))
+    # print('%-7s %-13s %-13s %-13s %-12s %s' % ('', '', '', '', '', '分析结束'))
+    print('\n分析结束!')
 
 
 if __name__ == '__main__':
