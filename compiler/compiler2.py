@@ -14,6 +14,7 @@ treeNum = 2
 
 intermediate = {}
 K = 0
+n = 1  # Tn
 
 tokenPath = "../compiler1/TOKEN.txt"
 with open(tokenPath, 'r') as f:
@@ -348,14 +349,14 @@ def isConvert(e):
 
 
 def isSymbol(e):
-    if e in ['+', '-', '*', '/']:
+    if e in [':=', '+', '-', '*', '/']:
         return True
     else:
         return False
 
 
 def priority(a, b):  # b优先级高 return true
-    p = ['(', ')', '*', '/', '+', '-']
+    p = [":=", '(', ')', '*', '/', '+', '-']
     if p.index(a) >= p.index(b):
         return True
     else:
@@ -402,10 +403,31 @@ def toRPN(sentence):  # reverse polish notation 逆波兰式
     return RPN
 
 
+def rpntoimd(rpn):
+    global intermediate
+    global n
+    global K
+    stack = []
+    for r in rpn:
+        if not isSymbol(r):
+            stack.append(r)
+        else:
+            arg2 = stack.pop()
+            arg1 = stack.pop()
+            itd = [r, arg1, arg2, 'T' + str(n)]
+            stack.append('T' + str(n))
+            n += 1
+            intermediate[K] = itd
+            K += 1
+
+
 # 赋值处理
 def assign():
     global treeNum
     global t
+    global intermediate
+    global n
+    global K
     print('--' * treeNum, '赋值处理开始')
     treeNum += 2
     begin = t
@@ -426,9 +448,6 @@ def assign():
                 pass
             else:
                 error(obj + 'type error')
-        # if token.isdigit() or token.isalpha():
-        #     changeSym(obj, token, 'value')
-
         aexp()
     else:
         error('assign 赋值计算错误')
@@ -438,8 +457,28 @@ def assign():
     s1 = s[:s.index(':=') + 1]
     s2 = s[s.index(':=') + 1:]
 
-    print(toRPN(s2))
+    rpn = toRPN(s2)
+    print(rpn)
+    stack = []
 
+    for r in rpn:
+        if not isSymbol(r):
+            stack.append(r)
+        else:
+            arg2 = stack.pop()
+            arg1 = stack.pop()
+            itd = [r, arg1, arg2, 'T' + str(n)]
+            stack.append('T' + str(n))
+            n += 1
+            intermediate[K] = itd
+            K += 1
+
+    if len(rpn) == 1:
+        itd = [s1[1], s2[0], '_', s1[0]]
+    else:
+        itd = [s1[1], 'T' + str(n - 1), '_', s1[0]]
+    intermediate[K] = itd
+    K += 1
 
     treeNum -= 2
     print('--' * treeNum, '赋值处理结束')
@@ -607,3 +646,4 @@ if __name__ == '__main__':
     # print(symList)
 
     outputSym()
+    print(intermediate)
