@@ -258,9 +258,9 @@ def ifs():
     bexp()
     end = t
     s = tokenList[begin + 1:end + 1]
-    print(s)
+    # print(s)
     rpn = toRPN(s)
-    print(rpn)
+    # print(rpn)
 
     bf = rpntoimd(rpn)  # 需要回填列表
 
@@ -275,8 +275,6 @@ def ifs():
         lasttoken()  # 回退一个
     else:
         lasttoken()
-
-    print(t, tokenList[t])
 
     backfill(bf)  # if 处理完毕错误跳转回传
 
@@ -334,6 +332,13 @@ def fors():
         error('for 起始条件错误')
     getnexttoken()
     aexp()
+    end = t
+    s = tokenList[begin:end]
+    print(s)
+    rpn = toRPN(s)
+    print(rpn)
+    rpntoimd(rpn)
+
     if token == 'to':
         aexp()
     else:
@@ -403,7 +408,7 @@ def isSymbol(e):
 
 # 优先级比较
 def priority(a, b):  # b优先级高 return true
-    p = ['(', ')', '*', '/', '+', '-', '>', '<', '>=', '<=', '<>', '==']
+    p = ['(', ')', '*', '/', '+', '-', ':=', '>', '<', '>=', '<=', '<>', '==']
     if p.index(a) >= p.index(b):
         return True
     else:
@@ -474,15 +479,15 @@ def rpntoimd(rpn):
                 K += 1
                 itd = ['j', '_', '_', iK]
                 backfill.append(K)
-                intermediate[K] = itd
-                iK = K
-                K += 1
             else:
-                itd = [r, arg1, arg2, 'T' + str(n)]
-                stack.append('T' + str(n))
-                n += 1
-                intermediate[K] = itd
-                K += 1
+                if r == ':=':
+                    itd = [r, arg2, '_', arg1]
+                else:
+                    itd = [r, arg1, arg2, 'T' + str(n)]
+                    stack.append('T' + str(n))
+                    n += 1
+            intermediate[K] = itd
+            K += 1
     return backfill
 
 
