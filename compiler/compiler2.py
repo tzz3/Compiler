@@ -260,7 +260,7 @@ def ifs():
     s = tokenList[begin + 1:end + 1]
     # print(s)
     rpn = toRPN(s)
-    print(rpn)
+    # print(rpn)
 
     bf = rpntoimd(rpn)  # 需要回填列表
 
@@ -405,16 +405,40 @@ def repeat():
     ST_SORT()
     lasttoken()
 
+    bf = []
     if token == 'until':
         getnexttoken()
         begin = t
         bexp()
-        end = t
-        s = tokenList[begin:end - 1]
-        print(s)
+        end = t - 1
+        # print(token)
+        # print(begin, end)
+        if end - begin <= 3:
+            s = tokenList[begin:end]
+        else:
+            s = tokenList[begin:end - 1]
+        # print(s)
         rpn = toRPN(s)
-        print(rpn)
-        rpntoimd(rpn)
+        # print(rpn)
+
+        stack = []
+        for r in rpn:
+            if not isSymbol(r):
+                stack.append(r)
+            else:
+                arg2 = stack.pop()
+                arg1 = stack.pop()
+                if r in rop:
+                    itd = ['j' + r, arg1, arg2, TC]
+                else:
+                    if r == ':=':
+                        itd = [r, arg2, '_', arg1]
+                    else:
+                        itd = [r, arg1, arg2, 'T' + str(n)]
+                        stack.append('T' + str(n))
+                        n += 1
+                intermediate[K] = itd
+                K += 1
     else:
         error('repeat')
     lasttoken()
@@ -769,5 +793,8 @@ if __name__ == '__main__':
 
     outputSym()
 
+    print("生成四元式：")
     for i in intermediate:
-        print(i, intermediate[i])
+        value = intermediate[i]
+        # print(i, intermediate[i])
+        print('(%-2s)  (%-2s, %-2s, %-2s, %-2s)' % (i, value[0], value[1], value[2], value[3]))
