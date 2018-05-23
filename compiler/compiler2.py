@@ -260,7 +260,7 @@ def ifs():
     s = tokenList[begin + 1:end + 1]
     # print(s)
     rpn = toRPN(s)
-    # print(rpn)
+    print(rpn)
 
     bf = rpntoimd(rpn)  # 需要回填列表
 
@@ -325,6 +325,8 @@ def fors():
 
     getnexttoken()
     begin = t
+    i = token
+    kf = K
     if not isIdentifider():
         error('for 标识符条件错误')
     getnexttoken()
@@ -334,22 +336,56 @@ def fors():
     aexp()
     end = t
     s = tokenList[begin:end]
-    print(s)
+    # print(s)
     rpn = toRPN(s)
-    print(rpn)
+    # print(rpn)
     rpntoimd(rpn)
 
+    bf = []
     if token == 'to':
+        begin = t
         aexp()
+        end = t
+        s = tokenList[begin + 1:end + 2]
+        arg1 = intermediate[K - 1][3]
+        if len(s) > 1:
+            rpn = toRPN(s)
+            rpntoimd(rpn)
+            arg2 = intermediate[K - 1][3]
+        else:
+            arg2 = s[0]
+        itd = ['j>', arg1, arg2, -1]
+        bf.append(K)
+        intermediate[K] = itd
+        K += 1
     else:
         error('for to error')
+
     getnexttoken()
-    aexp()
+    getnexttoken()
+
     if token == 'do':
         getnexttoken()
         ST_SORT()
+
     else:
         error('for do error')
+
+    # for 回跳
+    itd = ['+', i, 1, 'T' + str(n)]
+    n += 1
+    intermediate[K] = itd
+    K += 1
+    itd = [':=', 'T' + str(n - 1), '_', i]  # i+=1
+    intermediate[K] = itd
+    K += 1
+    itd = ['j', '_', '_', str(kf)]  # i+=1
+    n += 1
+    intermediate[K] = itd
+    K += 1
+
+    # backfill
+    backfill(bf)
 
     treeNum -= 2
     print('--' * treeNum, 'for 处理结束')
@@ -364,11 +400,21 @@ def repeat():
     treeNum += 2
 
     getnexttoken()
+    # a
+    TC = K
     ST_SORT()
     lasttoken()
+
     if token == 'until':
         getnexttoken()
+        begin = t
         bexp()
+        end = t
+        s = tokenList[begin:end - 1]
+        print(s)
+        rpn = toRPN(s)
+        print(rpn)
+        rpntoimd(rpn)
     else:
         error('repeat')
     lasttoken()
