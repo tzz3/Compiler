@@ -1,3 +1,5 @@
+import compiler3.compiler3
+
 wordCode = ['', 'program', 'var', 'integer', 'bool', 'real', 'char', 'const', 'begin', 'if', 'then', 'else', 'while',
             'do', 'for', 'to', 'end', 'read', 'write', 'true', 'false', 'not', 'and', 'or', '+', '-', '*', '/', '<',
             '>', '<=', '>=', '==', '<>', 'id', '整常数', '实常数', '字符常数', '布尔常数', '=', ';', ',', '\'', '/*', '*/', ':', '(',
@@ -10,12 +12,15 @@ t = -1
 token = ''
 treeNum = 2
 
+intermediate = {}
+K = 0
+
 tokenPath = "../compiler1/TOKEN.txt"
 with open(tokenPath, 'r') as f:
     tk = f.readlines()
     for k in tk:
         split = k.split()
-        if len(split)==3:
+        if len(split) == 3:
             tokenList.append(split[1])
     tokenList = tokenList[1:]
 
@@ -77,7 +82,10 @@ def changeSym(name, value, type):
     for sym in symList:
         if name == sym[0]:
             if type == 'value':  # 修改值
-                sym[3] = value
+                if len(sym) == 3:
+                    sym.append(value)
+                else:
+                    sym[3] = value
             if type == 'type':  # 修改类型
                 sym[2] = value
 
@@ -132,7 +140,6 @@ def aexp():  # 算术表达式
         treeNum -= 2
         print('--' * treeNum, '算术表达式处理结束')
     else:
-
         treeNum -= 2
         print('--' * treeNum, '算术表达式处理结束')
 
@@ -321,19 +328,118 @@ def repeat():
     print('--' * treeNum, 'repeat 处理结束')
 
 
+def typecheck(name, type):
+    for s in symList:
+        if name in s:
+            if s[2] != type:
+                return False
+            else:
+                return True
+    return False
+
+
+def isConvert(e):
+    if e.isdigit():
+        return True
+    elif e.isalpha():
+        return True
+    else:
+        return False
+
+
+def isSymbol(e):
+    if e in ['+', '-', '*', '/']:
+        return True
+    else:
+        return False
+
+
+def priority(a, b):  # b优先级高 return true
+    p = ['(', ')', '*', '/', '+', '-']
+    if p.index(a) >= p.index(b):
+        return True
+    else:
+        return False
+
+
+def toRPN(sentence):  # reverse polish notation 逆波兰式
+    global expression
+    RPN = []
+    stack = []
+    top = 0
+    for ch in sentence:
+        if isConvert(ch):
+            RPN.append(ch)
+        elif isSymbol(ch) or ch == "(":
+            # 先出栈
+            if top > 0 and priority(ch, stack[top - 1]) and stack[top - 1] != '(':  # ch优先级低
+                while top > 0 and priority(ch, stack[top - 1]) and stack[top - 1] != '(':
+                    RPN.append(stack[top - 1])
+                    top -= 1
+
+            # 进栈
+            if top == len(stack):
+                top += 1
+                stack.append(ch)
+            elif top < len(stack):
+                top += 1
+                stack[top - 1] = ch
+        elif ch == ')':
+            # 弹出
+            while top >= 0:
+                if stack[top - 1] == '(':
+                    top -= 1
+                    break
+
+                if stack[top - 1] != '(':
+                    RPN.append(stack[top - 1])
+                top -= 1
+    if top > 0:  # 循环完毕 将栈内元素输出
+        while top > 0:
+            if stack[top - 1] != '(':
+                RPN.append(stack[top - 1])
+            top -= 1
+    return RPN
+
+
 # 赋值处理
 def assign():
     global treeNum
+    global t
     print('--' * treeNum, '赋值处理开始')
     treeNum += 2
-
+    begin = t
     obj = token
     getnexttoken()
     if token == ':=':
         getnexttoken()
+
+        if token.isdigit():
+            if typecheck(obj, 'integer'):
+                changeSym(obj, token, 'value')
+                pass
+            else:
+                error(obj + ' type error')
+        elif token.isalpha():
+            if typecheck(obj, 'char'):
+                changeSym(obj, token, 'value')
+                pass
+            else:
+                error(obj + 'type error')
+        # if token.isdigit() or token.isalpha():
+        #     changeSym(obj, token, 'value')
+
         aexp()
     else:
         error('assign 赋值计算错误')
+    end = t
+    s = tokenList[begin:end]
+    print(s)
+    s1 = s[:s.index(':=') + 1]
+    s2 = s[s.index(':=') + 1:]
+
+    print(toRPN(s2))
+
 
     treeNum -= 2
     print('--' * treeNum, '赋值处理结束')
@@ -369,6 +475,7 @@ def error(reason):
 
 # 常量说明处理函数
 def handle_const():
+    global token
     global treeNum
     print('--' * treeNum, '常量说明处理开始')
     treeNum += 2
@@ -378,12 +485,16 @@ def handle_const():
         getnexttoken()
         if token == ':=':
             getnexttoken()
+
             if token.isdigit() or token.isalpha():
                 changeSym(name, token, 'value')
+
             getnexttoken()
             if token == ';':
                 getnexttoken()
                 if not isIdentifider():
+                    treeNum -= 2
+                    print('--' * treeNum, '常量说明处理结束')
                     return
             else:
                 error('常量声明错误')
@@ -453,7 +564,7 @@ def parser():
         getnexttoken()
         # 常量处理函数
         handle_const()
-        getnexttoken()
+        # getnexttoken()
 
     if token == 'var':
         getnexttoken()
@@ -475,12 +586,24 @@ def parser():
             ST_SORT()
 
 
+def outputSym():
+    global symList
+    print('SYMLIST:')
+    print("%-15s%-10s%-20s%s" % ('name', 'token', 'type', 'value'))
+    for t in symList:
+        if len(t) == 3:
+            print("%-15s%-10s%-20s%s" % (t[0], t[1], t[2], ''))  # , t[3]
+        else:
+            print("%-15s%-10s%-20s%s" % (t[0], t[1], t[2], t[3]))
+    print()
+
+
 if __name__ == '__main__':
     parser()
-    print()
-    print("ERROR:")
+    print("\nERROR:")
     for error in errorList:
-        print(error[0],' reason:',error[1])
+        print(error[0], ' reason:', error[1])
+    print()
+    # print(symList)
 
-    print(symList)
-    print(tokenList)
+    outputSym()

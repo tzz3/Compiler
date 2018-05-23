@@ -1,6 +1,8 @@
 
 
 program example1;
+const
+    a:=1;b:=3;
 var 
     a,b,c:integer;
     x:char;
