@@ -2,6 +2,7 @@ import copy
 import re
 
 # expression = []
+# E->TA A->+TA|# T->FB B->*FB|# F->(E)|i
 expression = ['E->TA', 'A->+TA|#', 'T->FB', 'B->*FB|#', 'F->(E)|i']
 express = []
 no_terminal = []
@@ -16,24 +17,27 @@ def inputExpression():  # 表达式输入
     global expression
     s = input("文法：\n")
     expression = s.split()
-    print(expression)
+    # print(expression)
 
 
 def getterminal():
     global expression
+    global terminal
     for e in expression:
         no_terminal.append(e[0])
     for e in expression:
         for k in e:
-            if not k.isupper() and k != '-' and k != '>' and k != '|' and k not in terminal:
+            if k not in terminal and not k.isupper() and k != '-' and k != '>' and k != '|':
                 terminal.append(k)
+    # print(terminal)
+    terminal = list(set(terminal))
 
 
 def expressSplit():  # 文法改写
     global expression
     global express
     for e in expression:
-        print(e)
+        # print(e)
         s = re.split(r"(->)|\|", e)
         for k in s:
             if k == None or k == '->' or k == '':
@@ -41,7 +45,11 @@ def expressSplit():  # 文法改写
         for k in s[1:]:
             express.append(s[0] + '->' + k)
         # print(s)
-    print("\nexpress:", express, end="\n\n")
+    # print("\nexpress:", express, end="\n\n")
+    print('\n  改写：')
+    for e in range(len(express)):
+        print('  ', e, '  ', express[e])
+    print()
 
 
 def init():  # 表达式处理
@@ -56,7 +64,7 @@ def init():  # 表达式处理
                 s.remove(k)
         # print(s)
         expression.append(s)
-    print("expression:", expression, end="\n\n")
+    # print("expression:", expression, end="\n\n")
 
 
 def check():  # 表达式验证
@@ -235,14 +243,9 @@ def isLL1():
         if recall():
             cirFirst()
             cirFirst2()
-            print("FIRST:", )
-            for f in first:
-                print('First(', f, ') = ', first[f])
 
             cirFollow()
-            print("\nFOLLOW:")
-            for f in follow:
-                print('Follow(', f, ') = ', follow[f])
+            outputf()
 
             # LL1 规则2
             for e in express:
@@ -287,24 +290,39 @@ def forecast():
             if '#' in follow[t]:
                 forecastform[(t, '#')] = express[k]
 
-    # print(forecastform)
-    print("\nforcastform:")
-    for n in no_terminal:
-        for key in forecastform:
-            if key[0] == n:
-                print(key, forecastform[key], end=' \t')
-        print()
+    # E->TA A->+TA|# T->FB B->*FB|# F->(E)|i
+    tab = '\t' * 3
+    print('\t' * (len(terminal)), '预测分析表')
+    print('----' * (len(terminal) + 2) * 2)
+    print('%-10s' % (' '), end='')
+    for t in terminal:
+        print('%-10s' % (t), end='')
     print()
+    print('----' * (len(terminal) + 2) * 2)
+    for n in no_terminal:
+        print('%3s' % (n), end=' ' * 5)
+        row = []
+        for t in terminal:
+            key = (n, t)
+            if key in forecastform:
+                print('%-10s' % (forecastform[key]), end='')
+                row.append(forecastform[key])
+            else:
+                print('%-10s' % (''), end='')
+                row.append('')
+        print()
+    print('----' * (len(terminal) + 2) * 2, end='\n' * 2)
 
 
 """递归下降分析"""
 
 
 def analyse():
+    global s
     global forecastform
     analyseform = []
 
-    s = 'i+i*i#'  # 分析符号串
+    str = s
     sp = re.split(r'([+*#])', s)
     s = []
     for k in sp:
@@ -321,7 +339,7 @@ def analyse():
     # print(alastack)
     topa = len(alastack)
 
-    print("对符号串", stringstack, "的分析过程:")
+    print("\n对符号串", str[:-1], "的分析过程", end='\n\n')
     while alastack[-1] != '#':
         X = alastack[-1]  # 栈顶符号
         a = stringstack[-1]  # 输入符号
@@ -346,21 +364,37 @@ def analyse():
                 if alastack[-1] == '#':
                     info = "接受"
         af = [copy.copy(alastack), stringstack, info]  # 使用copy来复制内容，否则会随alastack地址内容的改变而改变
-        # print(af)
         analyseform.append(af)
 
-    for a in analyseform:
-        print(a)
-    # print(analyseform)
+    length = len(analyseform)
+    print('%-5s %-11s %-10s %s' % ('序号', '状态栈', '符号栈', '推导所用产生式或匹配'))
+    for index in range(length):
+        af = analyseform[index]
+        a = ''.join(af[0])
+        symbol = ''.join(af[1])
+        info = af[2]
+        print('%-7d %-13s %-13s %s' % (index, a, symbol, info))
+
+
+def outputf():
+    global opf
+    if opf == True:
+        print("FIRST:", )
+        for f in first:
+            print('First(', f, ') = ', first[f])
+
+        print("\nFOLLOW:")
+        for f in follow:
+            print('Follow(', f, ') = ', follow[f])
 
 
 if __name__ == '__main__':
-    # inputExpression()
+    inputExpression()  # E->TA A->+TA|# T->FB B->*FB|# F->(E)|i
 
     # 表达式处理
     getterminal()
-    print("no_terminal:", no_terminal)
-    print("terminal:", terminal, end="\n\n")
+    # print("no_terminal:", no_terminal)
+    # print("terminal:", terminal, end="\n\n")
 
     expressSplit()
     init()
@@ -368,7 +402,11 @@ if __name__ == '__main__':
     if not check():
         print("表达式错误")
         exit(0)
+    # s = 'i+i*i#'  # 分析符号串
 
+    opf = False  # first follow 输出
     if isLL1():
         forecast()
+        s = input("分析符号串：")  # i+i*i
+        s += '#'
         analyse()

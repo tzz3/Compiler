@@ -31,15 +31,14 @@ def getterminal():
                 terminal.append(k)
     terminal.append('#')
 
-    print('no_terminal:', no_terminal)
-    print('terminal:', terminal, end="\n\n")
+    # print('no_terminal:', no_terminal)
+    # print('terminal:', terminal, end="\n\n")
 
 
 def expressSplit():  # 文法改写
     global expression
     global express
     for e in expression:
-        print(e)
         s = re.split(r"(->)|\|", e)
         for k in s:
             if k == None or k == '->' or k == '':
@@ -47,7 +46,12 @@ def expressSplit():  # 文法改写
         for k in s[1:]:
             express.append(s[0] + '->' + k)
     express.insert(0, 'S->' + express[0][0])
-    print("\nexpress:", express, end="\n\n")
+    # print("\nexpress:", express, end="\n\n")
+
+    print('\n改写：')
+    for e in range(len(express)):
+        print(e, express[e])
+    print()
 
 
 def init():  # 表达式处理
@@ -60,7 +64,7 @@ def init():  # 表达式处理
             if k == None or k == '->' or k == '':
                 s.remove(k)
         expression.append(s)
-    print("expression:", expression, end="\n\n")
+    # print("expression:", expression, end="\n\n")
 
 
 def addpoint():  # 项目加点
@@ -73,7 +77,7 @@ def addpoint():  # 项目加点
             s = e[1][:i] + '·' + e[1][i:]
             project.append(e[0] + '->' + s)
 
-    print("project:", project, end="\n\n")
+    # print("project:", project, end="\n\n")
 
 
 def projectSplit():  # 项目切割处理
@@ -85,7 +89,7 @@ def projectSplit():  # 项目切割处理
             if k == None or k == '->' or k == '':
                 s.remove(k)
         projects.append(s)
-    print("projects:", projects, end="\n\n")
+    # print("projects:", projects, end="\n\n")
 
 
 def Closure(I):
@@ -169,7 +173,7 @@ def cirproject():  # 项目集规范族计算
                                     iterm.append(g)
 
                     continue
-    print("iterm:", iterm, end="\n\n")
+    # print("iterm:", iterm, end="\n\n")
 
     for i in iterm:  # 推导族内元素
         c = Closure(i)
@@ -177,7 +181,7 @@ def cirproject():  # 项目集规范族计算
             iterms.append([i])
         else:
             iterms.append(c)
-    print('iterms:', iterms, end="\n\n")
+    # print('iterms:', iterms, end="\n\n")
 
     for c in contact:  # 转换关系图
         for i in iterms:
@@ -185,7 +189,7 @@ def cirproject():  # 项目集规范族计算
                 c[0] = iterms.index(i)
             if c[2] in i:
                 c[2] = iterms.index(i)
-    print("contact:", contact, end="\n\n")
+    # print("contact:", contact, end="\n\n")
 
 
 def analysisSheet():  # 计算分析表

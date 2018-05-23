@@ -6,6 +6,8 @@ wordCode = ['', 'program', 'var', 'integer', 'bool', 'real', 'char', 'const', 'b
             ')', '.', ':=', 'repeat', 'until']
 # 1-20 关键字  21-33 运算符  34 标识符  35-38 常数  39-49 界符 50-51 repeat util
 rop = ['>', '<', '>=', '<=', '<>', '==']
+aop = ['+', '-', '*', '/']
+bop = ['not', 'and', 'or']
 tokenList = []
 symList = []
 errorList = []
@@ -14,7 +16,7 @@ token = ''
 treeNum = 2
 
 intermediate = {}
-K = 0
+K = 0  # 四元式序号
 n = 1  # Tn
 
 tokenPath = "../compiler1/TOKEN.txt"
@@ -262,7 +264,9 @@ def ifs():
     rpn = toRPN(s)
     # print(rpn)
 
-    bf = rpntoimd(rpn)  # 需要回填列表
+    tc, fc = rpntoimd(rpn)  # 需要回填列表
+    # print(tc, fc)
+    backfill(tc)
 
     getnexttoken()
     if token != 'then':
@@ -276,7 +280,7 @@ def ifs():
     else:
         lasttoken()
 
-    backfill(bf)  # if 处理完毕错误跳转回传
+    backfill(fc)  # if 处理完毕错误跳转回传
 
     treeNum -= 2
     print('--' * treeNum, 'if 处理结束')
@@ -299,7 +303,7 @@ def whiles():
     s = tokenList[begin:end + 1]
     rpn = toRPN(s)
 
-    bf = rpntoimd(rpn)
+    tc, fc = rpntoimd(rpn)
 
     getnexttoken()
     if token == 'do':
@@ -309,7 +313,7 @@ def whiles():
     else:
         error('while do > error')
 
-    backfill(bf)  # while 错误跳转回填
+    backfill(fc)  # while 错误跳转回填
 
     treeNum -= 2
     print('--' * treeNum, 'while 处理结束')
@@ -340,6 +344,7 @@ def fors():
     rpn = toRPN(s)
     # print(rpn)
     rpntoimd(rpn)
+    kf = K
 
     bf = []
     if token == 'to':
@@ -379,7 +384,7 @@ def fors():
     itd = [':=', 'T' + str(n - 1), '_', i]  # i+=1
     intermediate[K] = itd
     K += 1
-    itd = ['j', '_', '_', str(kf)]  # i+=1
+    itd = ['j', '_', '_', str(kf)]  # i+=1  返回for起点
     n += 1
     intermediate[K] = itd
     K += 1
@@ -462,7 +467,7 @@ def typecheck(name, type):
 def isConvert(e):
     if e.isdigit():
         return True
-    elif e.isalpha():
+    elif e.isalpha() and e not in bop:
         return True
     else:
         return False
@@ -470,7 +475,7 @@ def isConvert(e):
 
 # 运算符
 def isSymbol(e):
-    if e in [':=', '+', '-', '*', '/', '>', '<', '>=', '<=', '<>', '==']:
+    if e in [':=', '+', '-', '*', '/', '>', '<', '>=', '<=', '<>', '==', 'not', 'and', 'or']:
         return True
     else:
         return False
@@ -478,7 +483,7 @@ def isSymbol(e):
 
 # 优先级比较
 def priority(a, b):  # b优先级高 return true
-    p = ['(', ')', '*', '/', '+', '-', ':=', '>', '<', '>=', '<=', '<>', '==']
+    p = ['(', ')', '*', '/', '+', '-', ':=', '>', '<', '>=', '<=', '<>', '==', 'not', 'and', 'or']
     if p.index(a) >= p.index(b):
         return True
     else:
@@ -535,30 +540,60 @@ def rpntoimd(rpn):
     global K
 
     stack = []
-    backfill = []  # 需要回填列表
+    tc = []  # 逻辑正确
+    fc = []  # 错误
+
+    if len(rpn) == 1:
+        itd = ['jnz', rpn[0], '_', -1]
+        tc.append(K)
+        intermediate[K] = itd
+        K += 1
+        itd = ['j', '_', '_', -1]
+        fc.append(K)
+        intermediate[K] = itd
+        K += 1
+        return tc, fc
+
     iK = -1
     for r in rpn:
         if not isSymbol(r):
             stack.append(r)
         else:
-            arg2 = stack.pop()
-            arg1 = stack.pop()
             if r in rop:
+                arg2 = stack.pop()
+                arg1 = stack.pop()
                 itd = ['j' + r, arg1, arg2, K + 2]
                 intermediate[K] = itd
                 K += 1
                 itd = ['j', '_', '_', iK]
-                backfill.append(K)
+                fc.append(K)
+                intermediate[K] = itd
+                K += 1
+            elif r in bop:  # not or and
+                if r == 'or':
+                    tc.append(K - 2)  # 跳转到content
+                    fc.append(K - 2)  # 跳转到当前运行完成
+                elif r == 'not':
+                    arg = stack.pop()
+                    itd = ['jnz', 'not ' + arg, '_', -1]
+                    fc.append(K)
+                    intermediate[K] = itd
+                    K += 1
+                else:  # and
+                    stack = []
+                pass
             else:
+                arg2 = stack.pop()
+                arg1 = stack.pop()
                 if r == ':=':
                     itd = [r, arg2, '_', arg1]
                 else:
                     itd = [r, arg1, arg2, 'T' + str(n)]
                     stack.append('T' + str(n))
                     n += 1
-            intermediate[K] = itd
-            K += 1
-    return backfill
+                intermediate[K] = itd
+                K += 1
+    return tc, fc
 
 
 # 跳转回填
@@ -591,7 +626,6 @@ def assign():
         elif token.isalpha():
             if typecheck(obj, 'char'):
                 changeSym(obj, token, 'value')
-                pass
             else:
                 error(obj + 'type error')
         aexp()
@@ -599,12 +633,12 @@ def assign():
         error('assign 赋值计算错误')
     end = t
     s = tokenList[begin:end]
-    # print(s)
+    print(s)
     s1 = s[:s.index(':=') + 1]
     s2 = s[s.index(':=') + 1:]
 
     rpn = toRPN(s2)
-    # print(rpn)
+    print(rpn)
     stack = []
     for r in rpn:
         if not isSymbol(r):

@@ -343,9 +343,10 @@ def removeComments(fileName):  # 去除注释
 
 if __name__ == '__main__':
     # fileName = 'E:\CQUT\编译原理\编译原理教学辅助系统\TestFile\sample.txt'
-    fileName = 'sample.txt'
+    # fileName = 'sample.txt'
+    fileName = input("sample文件地址：")  # sample.txt
     lines = removeComments(fileName)
-    print(lines)
+    # print(lines)
     token(lines)
 
     outputToken()
